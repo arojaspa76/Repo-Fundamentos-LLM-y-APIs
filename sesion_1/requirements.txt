@@ -1,0 +1,51 @@
+# ============================================================
+# Fundamentos de Arquitectura LLM — Sesión 1
+# requirements.txt
+# Python >= 3.11 recomendado
+# ============================================================
+
+# === API & Web Framework ===
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+pydantic==2.10.3
+pydantic-settings==2.6.1
+python-multipart==0.0.18
+httpx==0.28.1
+
+# === LLM Providers ===
+openai==1.57.0           # OpenAI GPT-4o, GPT-4o mini
+anthropic==0.39.0        # Claude 3.x
+google-generativeai==0.8.3  # Gemini
+ollama==0.4.4            # Ollama local LLM client
+
+# === LangChain Ecosystem (opcional, para demos avanzados) ===
+langchain==0.3.7
+langchain-openai==0.2.10
+langchain-anthropic==0.2.4
+langchain-community==0.3.7
+
+# === Utilidades ===
+python-dotenv==1.0.1     # Variables de entorno
+rich==13.9.4             # Output formateado en terminal
+typer==0.14.0            # CLI tools
+tenacity==9.0.0          # Retry logic
+tiktoken==0.8.0          # Token counting (OpenAI)
+
+# === Testing ===
+pytest==8.3.4
+pytest-asyncio==0.24.0
+httpx==0.28.1            # Para test de FastAPI
+
+# === Linting & Formatting ===
+ruff==0.8.4
+
+# === Análisis de Costos ===
+pandas==2.2.3
+tabulate==0.9.0
+
+# ============================================================
+# Instalación:
+#   python -m venv .venv
+#   source .venv/bin/activate
+#   pip install -r requirements.txt
+# ============================================================
