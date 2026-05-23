@@ -1,0 +1,7 @@
+
+# === Env files ===
+**/.env
+**/.env.*
+*.env
+/Sesion 2 y 3/.env
+#/proyectofinal
