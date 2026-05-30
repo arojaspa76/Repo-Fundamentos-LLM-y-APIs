@@ -1,0 +1,104 @@
+---
+# ── Deployment ─────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llm-api
+  namespace: llm-latam
+  labels:
+    app: llm-api
+    version: "1.0.0"
+    tier: backend
+spec:
+  replicas: 2                    # Mínimo 2 para alta disponibilidad
+  selector:
+    matchLabels:
+      app: llm-api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0          # Zero downtime deployment
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: llm-api
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port:   "8001"
+    spec:
+      containers:
+        - name: api-local
+          image: llm-api-local:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8001
+          env:
+            - name: OLLAMA_BASE_URL
+              value: "http://ollama-service:11434"
+            - name: OLLAMA_MODEL
+              value: "llama3.2:3b"
+            - name: APP_ENV
+              value: "production"
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "2Gi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+            initialDelaySeconds: 10
+            periodSeconds: 10
+---
+# ── Service ───────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: llm-api-service
+  namespace: llm-latam
+spec:
+  selector:
+    app: llm-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8001
+  type: LoadBalancer
+---
+# ── HorizontalPodAutoscaler ───────────────────────────────────
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: llm-api-hpa
+  namespace: llm-latam
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: llm-api
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70      # Escala si CPU > 70%
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80      # Escala si RAM > 80%

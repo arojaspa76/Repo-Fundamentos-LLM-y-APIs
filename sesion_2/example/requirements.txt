@@ -1,0 +1,64 @@
+# ============================================================
+# Fundamentos de Arquitectura LLM — Sesión 2
+# Python >= 3.12
+# ============================================================
+
+# === Core API ===
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+pydantic==2.10.3
+pydantic-settings==2.6.1
+python-multipart==0.0.18
+httpx==0.28.1
+
+# === LLM — Local ===
+ollama==0.4.4
+
+# === LLM — Azure AI Foundry ===
+openai==1.57.0                   # SDK compatible con Azure OpenAI
+azure-ai-inference==1.0.0b7      # Azure AI Inference SDK (AI Foundry)
+azure-identity==1.19.0           # Autenticación Azure (DefaultAzureCredential)
+azure-core==1.32.0
+
+# === Observabilidad y Monitoreo ===
+prometheus-fastapi-instrumentator==7.0.0
+python-json-logger==2.0.7
+opentelemetry-sdk==1.29.0
+opentelemetry-exporter-otlp==1.29.0
+
+# === Resiliencia ===
+tenacity==9.0.0                  # Retry con backoff exponencial
+circuitbreaker==2.0.0            # Patrón Circuit Breaker
+
+# === Caché y Performance ===
+redis==5.2.1                     # Caché Redis (opcional)
+cachetools==5.5.0                # Caché en memoria
+
+# === Mensajería (Tema 3) ===
+aio-pika==9.5.0                  # RabbitMQ async
+
+# === Utilidades ===
+python-dotenv==1.0.1
+rich==13.9.4
+typer==0.14.0
+tiktoken==0.8.0                  # Conteo de tokens
+
+# === Testing ===
+pytest==8.3.4
+pytest-asyncio==0.24.0
+pytest-cov==6.0.0
+
+# === Linting ===
+ruff==0.8.4
+
+# ============================================================
+# Instalación Windows:
+#   python -m venv .venv
+#   .venv\Scripts\activate
+#   pip install -r requirements.txt
+#
+# Instalación Linux/Mac:
+#   python -m venv .venv
+#   source .venv/bin/activate
+#   pip install -r requirements.txt
+# ============================================================

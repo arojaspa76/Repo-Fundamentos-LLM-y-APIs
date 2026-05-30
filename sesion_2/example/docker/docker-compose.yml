@@ -1,0 +1,112 @@
+services:
+
+  # ── API Local (Tema 1 — Ollama) ────────────────────────────
+  api-local:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.local
+    container_name: llm-api-local
+    ports:
+      - "8001:8001"
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=llama3.2:3b
+      - APP_ENV=development
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - llm-network
+    labels:
+      - "prometheus.io/scrape=true"
+      - "prometheus.io/port=8001"
+
+  # ── Ollama (motor LLM local) ───────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - llm-network
+    # GPU support (descomentar si tienes GPU NVIDIA):
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # ── API Azure (Tema 2) ─────────────────────────────────────
+  api-azure:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.azure
+    container_name: llm-api-azure
+    ports:
+      - "8002:8002"
+    env_file:
+      - ../.env
+    restart: unless-stopped
+    networks:
+      - llm-network
+
+  # ── Redis (Caché) ──────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: llm-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    restart: unless-stopped
+    networks:
+      - llm-network
+
+  # ── Prometheus (Métricas) ──────────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: llm-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    restart: unless-stopped
+    networks:
+      - llm-network
+
+  # ── Grafana (Dashboards) ───────────────────────────────────
+  grafana:
+    image: grafana/grafana:latest
+    container_name: llm-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=llm2024
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    networks:
+      - llm-network
+
+volumes:
+  ollama_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  llm-network:
+    driver: bridge
