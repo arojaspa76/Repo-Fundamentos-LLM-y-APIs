@@ -1,139 +1,191 @@
 # ============================================================
 # Fundamentos de Arquitectura LLM — Sesión 2
-# Makefile — Compatible Linux/macOS (usa bash en Windows con Git Bash)
+# Makefile — Compatible Windows (PowerShell + Git Bash) y Linux/macOS
 # ============================================================
 
-.PHONY: help setup run-local run-azure docker-up docker-down k8s-deploy \
-        test lint clean pull-model check-ollama deploy-azure logs
+.PHONY: help setup run-local run-azure docker-up docker-down \
+        k8s-deploy k8s-status test test-local test-azure \
+        lint format clean pull-model check-ollama deploy-azure logs
 
-PYTHON   := python3
-VENV     := .venv
+PYTHON     := python
+VENV       := .venv
 PORT_LOCAL := 8001
 PORT_AZURE := 8002
-MODEL    := llama3.2:3b
+MODEL      := llama3.2:3b
 
-CYAN   := \033[36m
-GREEN  := \033[32m
-YELLOW := \033[33m
-RED    := \033[31m
-RESET  := \033[0m
-BOLD   := \033[1m
+# ── Detectar sistema operativo ────────────────────────────────
+ifeq ($(OS),Windows_NT)
+    VENV_PIP      := $(VENV)\Scripts\pip
+    VENV_UVICORN  := $(VENV)\Scripts\uvicorn
+    VENV_PYTEST   := $(VENV)\Scripts\pytest
+    VENV_RUFF     := $(VENV)\Scripts\ruff
+else
+    VENV_PIP      := $(VENV)/bin/pip
+    VENV_UVICORN  := $(VENV)/bin/uvicorn
+    VENV_PYTEST   := $(VENV)/bin/pytest
+    VENV_RUFF     := $(VENV)/bin/ruff
+endif
 
-## ────────────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════
+# AYUDA
+# ══════════════════════════════════════════════════════════════
 help:
-	@echo ""
-	@echo "$(BOLD)$(CYAN)🏗️  Fundamentos de Arquitectura LLM — Sesión 2$(RESET)"
-	@echo "$(CYAN)════════════════════════════════════════════════$(RESET)"
-	@echo "$(GREEN)  setup$(RESET)         Instalar dependencias Python"
-	@echo "$(GREEN)  pull-model$(RESET)    Descargar modelo Ollama ($(MODEL))"
-	@echo "$(GREEN)  check-ollama$(RESET)  Verificar instalación Ollama"
-	@echo "$(GREEN)  run-local$(RESET)     Iniciar API Tema 1 (Ollama local)"
-	@echo "$(GREEN)  run-azure$(RESET)     Iniciar API Tema 2 (Azure AI Foundry)"
-	@echo "$(GREEN)  docker-up$(RESET)     Levantar stack completo con Docker Compose"
-	@echo "$(GREEN)  docker-down$(RESET)   Detener contenedores"
-	@echo "$(GREEN)  k8s-deploy$(RESET)    Desplegar en Kubernetes local (minikube)"
-	@echo "$(GREEN)  deploy-azure$(RESET)  Desplegar en Azure Container Apps"
-	@echo "$(GREEN)  test$(RESET)          Ejecutar suite de tests"
-	@echo "$(GREEN)  lint$(RESET)          Verificar calidad del código"
-	@echo "$(GREEN)  clean$(RESET)         Limpiar archivos temporales"
-	@echo "$(GREEN)  logs$(RESET)          Ver logs de contenedores"
-	@echo ""
+	@echo.
+	@echo === Fundamentos de Arquitectura LLM - Sesion 2 ===
+	@echo.
+	@echo   ENTORNO
+	@echo     setup          Crear venv e instalar dependencias
+	@echo     pull-model     Descargar modelo Ollama ($(MODEL))
+	@echo     check-ollama   Verificar instalacion de Ollama
+	@echo.
+	@echo   EJECUCION
+	@echo     run-local      API Tema 1 - FastAPI + Ollama   puerto $(PORT_LOCAL)
+	@echo     run-azure      API Tema 2 - Azure AI Foundry   puerto $(PORT_AZURE)
+	@echo.
+	@echo   DOCKER
+	@echo     docker-up      Levantar stack completo con Docker Compose
+	@echo     docker-down    Detener todos los contenedores
+	@echo     logs           Ver logs en tiempo real
+	@echo.
+	@echo   KUBERNETES
+	@echo     k8s-deploy     Desplegar en Kubernetes (minikube)
+	@echo     k8s-status     Ver estado de pods, services y HPA
+	@echo     deploy-azure   Desplegar en Azure Container Apps
+	@echo.
+	@echo   CALIDAD
+	@echo     test           Todos los tests con coverage
+	@echo     test-local     Tests Tema 1 (Ollama)
+	@echo     test-azure     Tests Tema 2 (Azure)
+	@echo     lint           Verificar codigo con ruff
+	@echo     format         Formatear codigo
+	@echo     clean          Limpiar archivos temporales
+	@echo.
+	@echo   USO RAPIDO
+	@echo     make setup
+	@echo     make pull-model
+	@echo     make run-local
+	@echo     Abrir: http://localhost:$(PORT_LOCAL)/docs
+	@echo.
 
-## ── Entorno ─────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════
+# ENTORNO
+# ══════════════════════════════════════════════════════════════
 setup:
-	@echo "$(CYAN)⚙️  Configurando entorno...$(RESET)"
+	@echo [*] Creando entorno virtual Python...
 	$(PYTHON) -m venv $(VENV)
-	$(VENV)/bin/pip install --upgrade pip
-	$(VENV)/bin/pip install -r requirements.txt
-	cp -n .env.example .env || true
-	@echo "$(GREEN)✅ Setup completado — activa con: source $(VENV)/bin/activate$(RESET)"
+	@echo [*] Instalando dependencias...
+	$(VENV_PIP) install --upgrade pip
+	$(VENV_PIP) install -r requirements.txt
+	@echo.
+	@echo [OK] Setup completado.
+	@echo      Activar entorno:  .venv\Scripts\activate
+	@echo.
 
 pull-model:
-	@echo "$(CYAN)🤖 Descargando modelo $(MODEL)...$(RESET)"
+	@echo [*] Descargando modelo $(MODEL)...
 	ollama pull $(MODEL)
-	@echo "$(GREEN)✅ Modelo listo$(RESET)"
+	@echo [OK] Modelo listo.
 
 check-ollama:
-	@echo "$(CYAN)🔍 Verificando Ollama...$(RESET)"
-	@which ollama > /dev/null 2>&1 && echo "$(GREEN)✅ Ollama instalado$(RESET)" || echo "$(RED)❌ Instalar desde https://ollama.ai$(RESET)"
-	@ollama list 2>/dev/null || true
+	@echo [*] Verificando Ollama...
+	ollama --version
+	@echo [*] Modelos disponibles:
+	ollama list
 
-## ── Ejecución Local ─────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════
+# EJECUCION
+# ══════════════════════════════════════════════════════════════
 run-local:
-	@echo "$(CYAN)🚀 Iniciando API Local (Tema 1) en puerto $(PORT_LOCAL)...$(RESET)"
-	@echo "$(YELLOW)📖 Docs: http://localhost:$(PORT_LOCAL)/docs$(RESET)"
-	@which ollama > /dev/null 2>&1 || (echo "$(RED)❌ Ollama requerido$(RESET)" && exit 1)
-	PYTHONPATH=. uvicorn examples.local_analyzer.main:app \
-		--reload --port $(PORT_LOCAL) --host 0.0.0.0 \
-		--log-level info
+	@echo [*] Iniciando API Local en puerto $(PORT_LOCAL)
+	@echo [*] Swagger UI: http://localhost:$(PORT_LOCAL)/docs
+	@echo [*] Ctrl+C para detener
+	@echo.
+	set PYTHONPATH=. && $(VENV_UVICORN) examples.local_analyzer.main:app --reload --port $(PORT_LOCAL) --host 0.0.0.0 --log-level info
 
-## ── Ejecución Azure ─────────────────────────────────────────
 run-azure:
-	@echo "$(CYAN)☁️  Iniciando API Azure (Tema 2) en puerto $(PORT_AZURE)...$(RESET)"
-	@echo "$(YELLOW)📖 Docs: http://localhost:$(PORT_AZURE)/docs$(RESET)"
-	@test -f .env || (echo "$(RED)❌ Crea .env desde .env.example$(RESET)" && exit 1)
-	PYTHONPATH=. uvicorn examples.azure_foundry.main:app \
-		--reload --port $(PORT_AZURE) --host 0.0.0.0
+	@echo [*] Iniciando API Azure en puerto $(PORT_AZURE)
+	@echo [*] Swagger UI: http://localhost:$(PORT_AZURE)/docs
+	@echo.
+	set PYTHONPATH=. && $(VENV_UVICORN) examples.azure_foundry.main:app --reload --port $(PORT_AZURE) --host 0.0.0.0 --log-level info
 
-## ── Docker ──────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════
+# DOCKER
+# ══════════════════════════════════════════════════════════════
 docker-up:
-	@echo "$(CYAN)🐳 Levantando stack Docker...$(RESET)"
+	@echo [*] Levantando stack Docker Compose...
 	docker compose -f docker/docker-compose.yml up -d --build
-	@echo "$(GREEN)✅ Stack levantado$(RESET)"
-	@echo "$(YELLOW)  Local API:  http://localhost:$(PORT_LOCAL)/docs$(RESET)"
-	@echo "$(YELLOW)  Azure API:  http://localhost:$(PORT_AZURE)/docs$(RESET)"
-	@echo "$(YELLOW)  Prometheus: http://localhost:9090$(RESET)"
-	@echo "$(YELLOW)  Grafana:    http://localhost:3000$(RESET)"
+	@echo.
+	@echo [OK] Servicios disponibles:
+	@echo       API Local:   http://localhost:$(PORT_LOCAL)/docs
+	@echo       API Azure:   http://localhost:$(PORT_AZURE)/docs
+	@echo       Prometheus:  http://localhost:9090
+	@echo       Grafana:     http://localhost:3000  (admin / llm2024)
+	@echo.
 
 docker-down:
-	@echo "$(CYAN)🛑 Deteniendo contenedores...$(RESET)"
+	@echo [*] Deteniendo contenedores...
 	docker compose -f docker/docker-compose.yml down
-	@echo "$(GREEN)✅ Detenido$(RESET)"
+	@echo [OK] Contenedores detenidos.
 
 logs:
 	docker compose -f docker/docker-compose.yml logs -f
 
-## ── Kubernetes ──────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════
+# KUBERNETES
+# ══════════════════════════════════════════════════════════════
 k8s-deploy:
-	@echo "$(CYAN)☸️  Desplegando en Kubernetes...$(RESET)"
+	@echo [*] Desplegando en Kubernetes...
 	kubectl apply -f k8s/
-	kubectl rollout status deployment/llm-api
-	kubectl get pods -l app=llm-api
-	@echo "$(GREEN)✅ Desplegado$(RESET)"
+	kubectl rollout status deployment/llm-api-local -n llm-latam
+	@echo [OK] Desplegado.
 
 k8s-status:
-	kubectl get pods,services,hpa -l app=llm-api
+	kubectl get pods,services,hpa -n llm-latam
 
-## ── Azure Deploy ────────────────────────────────────────────
 deploy-azure:
-	@echo "$(CYAN)☁️  Desplegando en Azure Container Apps...$(RESET)"
+	@echo [*] Desplegando en Azure Container Apps...
 	bash examples/azure_foundry/deploy_azure.sh
 
-## ── Calidad ─────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════
+# TESTS
+# ══════════════════════════════════════════════════════════════
 test:
-	@echo "$(CYAN)🧪 Ejecutando tests...$(RESET)"
-	pytest tests/ -v --tb=short --cov=. --cov-report=term-missing
-	@echo "$(GREEN)✅ Tests completados$(RESET)"
+	@echo [*] Ejecutando tests...
+	set PYTHONPATH=. && $(VENV_PYTEST) tests/ -v --tb=short --cov=examples --cov=src --cov-report=term-missing
+	@echo [OK] Tests completados.
 
 test-local:
-	pytest tests/test_local.py -v
+	set PYTHONPATH=. && $(VENV_PYTEST) tests/test_local.py -v --tb=short
 
 test-azure:
-	pytest tests/test_azure.py -v
+	set PYTHONPATH=. && $(VENV_PYTEST) tests/test_azure.py -v --tb=short
 
+# ══════════════════════════════════════════════════════════════
+# CALIDAD
+# ══════════════════════════════════════════════════════════════
 lint:
-	@echo "$(CYAN)🔍 Verificando código...$(RESET)"
-	ruff check .
-	ruff format --check .
+	@echo [*] Verificando codigo...
+	$(VENV_RUFF) check .
+	@echo [OK] Codigo verificado.
 
 format:
-	ruff format .
-	ruff check --fix .
+	$(VENV_RUFF) format .
+	$(VENV_RUFF) check --fix .
+	@echo [OK] Codigo formateado.
 
-## ── Limpieza ────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════
+# LIMPIEZA
+# ══════════════════════════════════════════════════════════════
 clean:
-	@echo "$(CYAN)🧹 Limpiando...$(RESET)"
+	@echo [*] Limpiando archivos temporales...
+ifeq ($(OS),Windows_NT)
+	@for /d /r . %%d in (__pycache__) do @if exist "%%d" rmdir /s /q "%%d" 2>nul
+	@for /d /r . %%d in (.pytest_cache) do @if exist "%%d" rmdir /s /q "%%d" 2>nul
+	@for /d /r . %%d in (.ruff_cache) do @if exist "%%d" rmdir /s /q "%%d" 2>nul
+	@del /s /q *.pyc 2>nul
+else
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name .pytest_cache -exec rm -rf {} + 2>/dev/null || true
 	find . -name "*.pyc" -delete 2>/dev/null || true
-	find . -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
-	@echo "$(GREEN)✅ Limpio$(RESET)"
+endif
+	@echo [OK] Limpieza completada.
