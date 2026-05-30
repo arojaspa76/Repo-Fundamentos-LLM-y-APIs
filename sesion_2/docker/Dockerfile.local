@@ -1,0 +1,67 @@
+# ============================================================
+# Dockerfile — API de Riesgo Crediticio (Local + Ollama)
+# Sesión 2, Tema 1
+#
+# Ollama corre como un servicio separado (ver docker-compose.yml)
+# Este contenedor solo contiene la API FastAPI.
+#
+# Build:
+#   docker build -f docker/Dockerfile.local -t llm-api-local .
+# Run:
+#   docker run -p 8001:8001 --env-file .env llm-api-local
+# ============================================================
+
+FROM python:3.12-slim
+
+# Metadatos
+LABEL maintainer="AI-LLM Solution Architect"
+LABEL description="API de Análisis de Riesgo Crediticio — FastAPI + Ollama"
+LABEL version="1.0.0"
+
+# Variables de entorno del contenedor
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app \
+    PORT=8001 \
+    APP_ENV=production
+
+# Directorio de trabajo
+WORKDIR /app
+
+# ── Dependencias del sistema ───────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        curl \
+        build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Dependencias Python ────────────────────────────────────
+# Copiamos requirements primero para aprovechar caché de Docker
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt
+
+# ── Código de la aplicación ────────────────────────────────
+COPY examples/local_analyzer/ ./examples/local_analyzer/
+COPY src/ ./src/
+COPY .env.example .env.example
+
+# ── Usuario no-root (seguridad) ────────────────────────────
+RUN useradd -m -u 1001 appuser && chown -R appuser:appuser /app
+USER appuser
+
+# ── Health check ───────────────────────────────────────────
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:${PORT}/health || exit 1
+
+# ── Exponer puerto ─────────────────────────────────────────
+EXPOSE ${PORT}
+
+# ── Comando de inicio ──────────────────────────────────────
+# workers=1: Ollama no es thread-safe por defecto
+# timeout-keep-alive=75: para conexiones largas del LLM
+CMD ["uvicorn", "examples.local_analyzer.main:app", \
+     "--host", "0.0.0.0", \
+     "--port", "8001", \
+     "--workers", "1", \
+     "--timeout-keep-alive", "75", \
+     "--log-level", "info"]

@@ -1,0 +1,63 @@
+# ============================================================
+# Dockerfile — API de Detección de Fraude (Azure AI Foundry)
+# Sesión 2, Tema 2
+#
+# Este contenedor conecta con Azure AI Foundry via red.
+# Las credenciales se inyectan via variables de entorno.
+#
+# Build:
+#   docker build -f docker/Dockerfile.azure -t llm-api-azure .
+# Run:
+#   docker run -p 8002:8002 --env-file .env llm-api-azure
+#
+# En producción Azure Container Apps:
+#   - Usar Managed Identity en lugar de API Key
+#   - Las variables AZURE_* se configuran en Container App secrets
+# ============================================================
+
+FROM python:3.12-slim
+
+LABEL maintainer="AI-LLM Solution Architect"
+LABEL description="API de Detección de Fraude — FastAPI + Azure AI Foundry"
+LABEL version="1.0.0"
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app \
+    PORT=8002 \
+    APP_ENV=production
+
+WORKDIR /app
+
+# ── Dependencias del sistema ───────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        curl \
+        ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Dependencias Python ────────────────────────────────────
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt
+
+# ── Código ────────────────────────────────────────────────
+COPY examples/azure_foundry/ ./examples/azure_foundry/
+COPY src/ ./src/
+
+# ── Seguridad: usuario no-root ─────────────────────────────
+RUN useradd -m -u 1001 appuser && chown -R appuser:appuser /app
+USER appuser
+
+# ── Health check ───────────────────────────────────────────
+HEALTHCHECK --interval=30s --timeout=15s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:${PORT}/health || exit 1
+
+EXPOSE ${PORT}
+
+# ── workers=2: Azure AI Foundry soporta concurrencia ──────
+CMD ["uvicorn", "examples.azure_foundry.main:app", \
+     "--host", "0.0.0.0", \
+     "--port", "8002", \
+     "--workers", "2", \
+     "--timeout-keep-alive", "30", \
+     "--log-level", "info"]

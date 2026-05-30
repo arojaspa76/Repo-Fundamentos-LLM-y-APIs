@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'llm-api-local'
+    static_configs:
+      - targets: ['api-local:8001']
+
+  - job_name: 'llm-api-azure'
+    static_configs:
+      - targets: ['api-azure:8002']

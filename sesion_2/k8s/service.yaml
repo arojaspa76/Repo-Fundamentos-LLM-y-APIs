@@ -1,0 +1,78 @@
+---
+# ── Service: API Local (Ollama) ────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: llm-api-local-service
+  namespace: llm-latam
+  labels:
+    app: llm-api-local
+    tier: backend
+spec:
+  selector:
+    app: llm-api-local
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 8001
+    - name: metrics
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: LoadBalancer
+  # En nube pública (AKS, EKS, GKE):
+  #   LoadBalancer crea un IP público automáticamente.
+  # En local (minikube):
+  #   minikube tunnel  (para obtener EXTERNAL-IP)
+
+---
+# ── Service: API Azure (Fraud) ─────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: llm-api-azure-service
+  namespace: llm-latam
+  labels:
+    app: llm-api-azure
+    tier: backend
+spec:
+  selector:
+    app: llm-api-azure
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 8002
+  type: LoadBalancer
+
+---
+# ── Service: Ollama interno (ClusterIP) ───────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama-service
+  namespace: llm-latam
+  labels:
+    app: ollama
+spec:
+  selector:
+    app: ollama
+  ports:
+    - name: ollama
+      protocol: TCP
+      port: 11434
+      targetPort: 11434
+  # ClusterIP: solo accesible dentro del cluster
+  # Las APIs lo usan via: http://ollama-service:11434
+  type: ClusterIP
+
+---
+# ── Namespace ──────────────────────────────────────────────
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: llm-latam
+  labels:
+    environment: production
+    app: llm-arquitectura

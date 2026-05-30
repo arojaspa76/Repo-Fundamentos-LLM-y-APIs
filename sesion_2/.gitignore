@@ -1,0 +1,19 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# Secretos — NUNCA commitear
+.env
+
+# Docker
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

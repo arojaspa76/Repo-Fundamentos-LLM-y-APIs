@@ -1,0 +1,90 @@
+---
+# ── HPA: API Local ─────────────────────────────────────────
+# Escala de 2 a 10 pods según CPU y memoria.
+# Con Ollama local, el cuello de botella es la inferencia;
+# escalar pods solo ayuda si Ollama también puede escalar.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: llm-api-local-hpa
+  namespace: llm-latam
+  annotations:
+    description: "HPA para API de riesgo crediticio con Ollama"
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: llm-api-local
+  minReplicas: 2     # Mínimo para alta disponibilidad
+  maxReplicas: 10    # Máximo controlado (costo)
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70   # Escala si CPU promedio > 70%
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80   # Escala si RAM > 80%
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60    # Espera 60s antes de escalar arriba
+      policies:
+        - type: Pods
+          value: 2
+          periodSeconds: 60             # Agrega máximo 2 pods por minuto
+    scaleDown:
+      stabilizationWindowSeconds: 300   # Espera 5min antes de escalar abajo
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 60             # Quita máximo 1 pod por minuto
+
+---
+# ── HPA: API Azure ─────────────────────────────────────────
+# Azure AI Foundry soporta alta concurrencia;
+# aquí sí tiene sentido escalar pods agresivamente.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: llm-api-azure-hpa
+  namespace: llm-latam
+  annotations:
+    description: "HPA para API de fraude con Azure AI Foundry"
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: llm-api-azure
+  minReplicas: 2
+  maxReplicas: 20    # Más pods: Azure soporta el volumen
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60   # Más agresivo: Azure responde rápido
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 75
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 30    # Reacciona rápido ante picos
+      policies:
+        - type: Pods
+          value: 4
+          periodSeconds: 60             # Hasta 4 pods nuevos por minuto
+    scaleDown:
+      stabilizationWindowSeconds: 180
+      policies:
+        - type: Pods
+          value: 2
+          periodSeconds: 60
