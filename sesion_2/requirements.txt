@@ -9,10 +9,10 @@ uvicorn[standard]==0.32.1
 pydantic==2.10.3
 pydantic-settings==2.6.1
 python-multipart==0.0.18
-httpx==0.28.1
 
 # === LLM — Local ===
-ollama==0.4.4
+httpx==0.28.1
+ollama==0.6.2
 
 # === LLM — Azure AI Foundry ===
 openai==1.57.0                   # SDK compatible con Azure OpenAI
