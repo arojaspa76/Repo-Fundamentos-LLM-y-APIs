@@ -1,0 +1,54 @@
+# ============================================================
+# Fundamentos de Arquitectura LLM — Sesión 3
+# Seguridad, Alta Disponibilidad y Documentación
+# Python >= 3.12
+# ============================================================
+
+# === Core API ===
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+pydantic==2.10.3
+pydantic-settings==2.6.1
+python-multipart==0.0.18
+httpx==0.28.1
+
+# === LLM — Local ===
+ollama==0.6.2
+
+# === LLM — Azure AI Foundry ===
+openai==1.57.0
+azure-identity==1.19.0
+azure-core==1.32.0
+
+# === Seguridad (Tema 3) ===
+python-jose[cryptography]==3.3.0  # JWT tokens
+passlib[bcrypt]==1.7.4            # Hash de contraseñas
+cryptography==44.0.0              # AES-256 cifrado
+python-dotenv==1.0.1
+
+# === Monitoreo y Observabilidad ===
+prometheus-fastapi-instrumentator==7.0.0
+python-json-logger==2.0.7
+structlog==24.4.0                 # Logging estructurado
+
+# === Resiliencia ===
+tenacity==9.0.0
+cachetools==5.5.0
+
+# === Documentación y Costos (Tema 4) ===
+jinja2==3.1.4                     # Templates de documentación
+tabulate==0.9.0                   # Tablas de costos
+pandas==2.2.3                     # Análisis de datos
+
+# === Utilidades ===
+rich==13.9.4
+typer==0.14.0
+tiktoken==0.8.0
+
+# === Testing ===
+pytest==8.3.4
+pytest-asyncio==0.24.0
+pytest-cov==6.0.0
+
+# === Linting ===
+ruff==0.8.4

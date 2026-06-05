@@ -23,8 +23,13 @@ from fastapi import FastAPI, HTTPException, status, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from analyzer import CreditAnalyzer
-from models import (
+
+from examples.local_analyzer.analyzer import CreditAnalyzer
+
+#from analyzer import CreditAnalyzer
+
+#from models import (
+from examples.local_analyzer.models import (
     CreditRequest, CreditAnalysisResponse,
     ScoreRequest, ScoreResponse,
     HealthResponse,

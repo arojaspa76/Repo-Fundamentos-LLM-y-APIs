@@ -20,7 +20,8 @@ from typing import Optional
 import ollama
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from models import (
+# from models import (
+from examples.local_analyzer.models import (
     CreditRequest, CreditAnalysisResponse, ScoreRequest, ScoreResponse,
     RiskIndicators, RiskLevel
 )
