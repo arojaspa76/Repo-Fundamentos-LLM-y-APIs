@@ -1,0 +1,49 @@
+# ============================================================
+# Fundamentos de Arquitectura LLM — Sesión 4 (FINAL)
+# Python >= 3.12
+# ============================================================
+
+# === Core API ===
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+pydantic==2.10.3
+pydantic-settings==2.6.1
+python-multipart==0.0.18
+httpx==0.28.1
+
+# === LLM — Local ===
+ollama==0.6.2
+
+# === LLM — Azure AI Foundry ===
+openai==1.57.0
+azure-identity==1.19.0
+azure-core==1.32.0
+
+# === Seguridad ===
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+cryptography==44.0.0
+
+# === Procesamiento de texto ===
+tiktoken==0.8.0          # Conteo de tokens
+python-dotenv==1.0.1
+
+# === Observabilidad ===
+prometheus-fastapi-instrumentator==7.0.0
+structlog==24.4.0
+
+# === Resiliencia ===
+tenacity==9.0.0
+cachetools==5.5.0
+
+# === Utilidades ===
+rich==13.9.4
+tabulate==0.9.0
+
+# === Testing ===
+pytest==8.3.4
+pytest-asyncio==0.24.0
+pytest-cov==6.0.0
+
+# === Linting ===
+ruff==0.8.4
