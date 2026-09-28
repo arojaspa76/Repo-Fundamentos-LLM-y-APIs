@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.adk/
+
+# Node
+node_modules/
+dist/
+
+# Secretos — ¡nunca al repositorio!
+.env
+*.pem
+application_default_credentials.json
+
+# Temporales de ADK deploy
+**/deploy_*_tmp*/
+
+# SO / editores
+.DS_Store
+.vscode/
+.idea/

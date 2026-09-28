@@ -1,119 +1,54 @@
-# ============================================================
-# Fundamentos de Arquitectura LLM — Sesión 1
-# Makefile
-# ============================================================
+# Atajos del laboratorio (Ubuntu 24.04+). Ejecute `make help`.
+PY ?= python3.12
+VENV = .venv
+BIN = $(VENV)/bin
 
-.PHONY: help setup demo-ollama demo-streaming run-api test lint clean cost-calc pull-models
+.PHONY: help setup models backend frontend test labs simulado docker-up docker-models docker-down clean
 
-# Variables
-PYTHON := python3
-VENV   := .venv
-PORT   := 8000
-MODEL  := llama3.2:3b
-
-## ─── Colores para output ──────────────────────────────────
-RESET  := \033[0m
-BOLD   := \033[1m
-CYAN   := \033[36m
-GREEN  := \033[32m
-YELLOW := \033[33m
-RED    := \033[31m
-
-# ──────────────────────────────────────────────────────────
-# help: Muestra todos los comandos disponibles
-# ──────────────────────────────────────────────────────────
 help:
-	@echo ""
-	@echo "$(BOLD)$(CYAN)🧠 Fundamentos de Arquitectura LLM — Sesión 1$(RESET)"
-	@echo "$(CYAN)═══════════════════════════════════════════════$(RESET)"
-	@grep -E '^##' Makefile | sed 's/## //' | \
-		awk -F: '{printf "  $(GREEN)%-20s$(RESET) %s\n", $$1, $$2}'
-	@echo ""
+	@echo "make setup        Crea el entorno virtual e instala backend + frontend"
+	@echo "make models       Descarga los modelos de Ollama del curso"
+	@echo "make backend      Inicia FastAPI en http://localhost:8000 (docs en /docs)"
+	@echo "make frontend     Inicia React/Vite en http://localhost:5173"
+	@echo "make test         Ejecuta las pruebas del backend y de los agentes"
+	@echo "make simulado     Inicia un Ollama SIMULADO (plan B sin GPU/sin internet)"
+	@echo "make docker-up    Levanta todo con Docker Compose (http://localhost:8080)"
 
-## setup: Instalar dependencias Python
 setup:
-	@echo "$(CYAN)⚙️  Creando entorno virtual...$(RESET)"
-	$(PYTHON) -m venv $(VENV)
-	@echo "$(CYAN)📦 Instalando dependencias...$(RESET)"
-	$(VENV)/bin/pip install --upgrade pip
-	$(VENV)/bin/pip install -r requirements.txt
-	@echo "$(GREEN)✅ Setup completado$(RESET)"
-	@echo "$(YELLOW)👉 Activar con: source $(VENV)/bin/activate$(RESET)"
+	$(PY) -m venv $(VENV)
+	$(BIN)/pip install --upgrade pip
+	$(BIN)/pip install -r requirements.txt
+	cp -n backend/.env.example backend/.env || true
+	cd frontend && npm install
 
-## pull-models: Descargar modelos recomendados en Ollama
-pull-models:
-	@echo "$(CYAN)🤖 Descargando modelo $(MODEL)...$(RESET)"
-	ollama pull $(MODEL)
-	@echo "$(GREEN)✅ Modelo descargado$(RESET)"
-	@echo "$(YELLOW)💡 Para descargar otro: make pull-models MODEL=mistral:7b$(RESET)"
+models:
+	ollama pull llama3.2:3b
+	ollama pull llama3.2:1b
+	ollama pull nomic-embed-text
 
-## demo-ollama: Ejecutar demo LLM local con Ollama
-demo-ollama:
-	@echo "$(CYAN)🦙 Iniciando demo Ollama local...$(RESET)"
-	@which ollama > /dev/null 2>&1 || (echo "$(RED)❌ Ollama no instalado. Ver: https://ollama.ai/download$(RESET)" && exit 1)
-	$(PYTHON) examples/ollama_demo/demo_local.py
+backend:
+	cd backend && ../$(BIN)/uvicorn app.main:app --reload --port 8000
 
-## demo-streaming: Demo con respuestas en streaming
-demo-streaming:
-	@echo "$(CYAN)🌊 Iniciando demo streaming...$(RESET)"
-	$(PYTHON) examples/ollama_demo/demo_streaming.py
+frontend:
+	cd frontend && npm run dev
 
-## run-api: Iniciar API FastAPI en modo desarrollo
-run-api:
-	@echo "$(CYAN)🚀 Iniciando FastAPI en puerto $(PORT)...$(RESET)"
-	@echo "$(YELLOW)📖 Docs disponibles en: http://localhost:$(PORT)/docs$(RESET)"
-	uvicorn examples.fastapi_demo.main:app --reload --port $(PORT) --host 0.0.0.0
-
-## cost-calc: Ejecutar calculadora interactiva de costos
-cost-calc:
-	@echo "$(CYAN)💰 Calculadora de Costos LLM$(RESET)"
-	$(PYTHON) src/cost_calculator.py
-
-## test: Ejecutar suite de pruebas
 test:
-	@echo "$(CYAN)🧪 Ejecutando tests...$(RESET)"
-	pytest tests/ -v --tb=short
-	@echo "$(GREEN)✅ Tests completados$(RESET)"
+	cd backend && ../$(BIN)/pytest -q
+	cd gcp-agent-platform/parte3_docker_sin_adk && ../../$(BIN)/pytest -q
 
-## lint: Verificar calidad del código con ruff
-lint:
-	@echo "$(CYAN)🔍 Verificando código...$(RESET)"
-	ruff check .
-	ruff format --check .
-	@echo "$(GREEN)✅ Código verificado$(RESET)"
+simulado:
+	$(BIN)/python scripts/ollama_simulado.py
 
-## format: Formatear código automáticamente
-format:
-	ruff format .
-	ruff check --fix .
+docker-up:
+	docker compose up -d --build
 
-## clean: Limpiar archivos temporales y caché
+docker-models:
+	docker compose exec ollama ollama pull llama3.2:3b
+	docker compose exec ollama ollama pull nomic-embed-text
+
+docker-down:
+	docker compose down
+
 clean:
-	@echo "$(CYAN)🧹 Limpiando archivos temporales...$(RESET)"
-	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name .pytest_cache -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name .ruff_cache -exec rm -rf {} + 2>/dev/null || true
-	find . -name "*.pyc" -delete 2>/dev/null || true
-	@echo "$(GREEN)✅ Limpieza completada$(RESET)"
-
-## env: Copiar archivo de variables de entorno
-env:
-	cp .env.example .env
-	@echo "$(YELLOW)📝 Edita .env con tus API keys$(RESET)"
-
-## check-ollama: Verificar instalación de Ollama y modelos disponibles
-check-ollama:
-	@echo "$(CYAN)🔍 Verificando Ollama...$(RESET)"
-	ollama --version
-	@echo "\n$(CYAN)Modelos disponibles:$(RESET)"
-	ollama list
-
-# ──────────────────────────────────────────────────────────
-# Targets de conveniencia para el proyecto final
-# ──────────────────────────────────────────────────────────
-
-## project-init: Inicializar estructura del proyecto final
-project-init:
-	mkdir -p student-projects/$$(whoami)
-	cp docs/project_template.md student-projects/$$(whoami)/README.md
-	@echo "$(GREEN)✅ Proyecto inicializado en student-projects/$$(whoami)/$(RESET)"
+	rm -rf $(VENV) frontend/node_modules frontend/dist
+	find . -name __pycache__ -type d -prune -exec rm -rf {} +

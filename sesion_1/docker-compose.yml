@@ -1,0 +1,48 @@
+# Levanta TODO el laboratorio con un solo comando:
+#   docker compose up -d --build
+#   docker compose exec ollama ollama pull llama3.2:3b
+#   docker compose exec ollama ollama pull nomic-embed-text
+# Abrir: http://localhost:8080
+#
+# Si ya tiene Ollama instalado en el host, puede omitir el servicio "ollama"
+# y usar OLLAMA_BASE_URL=http://host.docker.internal:11434
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama   # los modelos descargados persisten entre reinicios
+    restart: unless-stopped
+    # Con GPU NVIDIA (requiere nvidia-container-toolkit), descomente:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  backend:
+    build: ./backend
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+      CORS_ORIGINS: http://localhost:8080
+    env_file:
+      - path: ./backend/.env
+        required: false
+    ports:
+      - "8000:8000"
+    depends_on:
+      - ollama
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  ollama_models:

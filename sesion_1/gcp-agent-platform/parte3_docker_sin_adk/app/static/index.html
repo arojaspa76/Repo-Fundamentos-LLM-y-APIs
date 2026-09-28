@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Agente TechCorp · Cloud Run</title>
+  <style>
+    :root { --bg:#0f1923; --panel:#16232f; --border:#2a3e50; --text:#e6eef5; --muted:#8ea3b5; --cyan:#00d4ff; --gold:#f5a623; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family: Arial, sans-serif; }
+    main { max-width: 760px; margin: 0 auto; padding: 24px 16px; }
+    h1 { color: var(--cyan); margin: 0 0 4px; font-size: 1.6rem; }
+    p.sub { color: var(--muted); margin: 0 0 16px; }
+    #log { background: var(--panel); border:1px solid var(--border); border-radius:12px; padding:16px; min-height:320px; }
+    .msg { margin: 10px 0; line-height: 1.45; white-space: pre-wrap; }
+    .user { color: var(--gold); }
+    .tool { color: var(--muted); font-family: "Courier New", monospace; font-size: .85rem; }
+    form { display:flex; gap:8px; margin-top:12px; }
+    input { flex:1; padding:12px; border-radius:8px; border:1px solid var(--border); background:#1d2d3b; color:var(--text); font:inherit; }
+    button { padding:12px 18px; border:0; border-radius:8px; background:var(--cyan); color:var(--bg); font-weight:bold; cursor:pointer; }
+    .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+    .chip { background:#1d2d3b; color:var(--text); border:1px solid var(--border); padding:6px 10px; border-radius:999px; font-size:.8rem; cursor:pointer; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Mesa de ayuda TechCorp</h1>
+  <p class="sub">Agente sin ADK · FastAPI + google-genai · desplegado con Docker en Cloud Run</p>
+  <div id="log"></div>
+  <form id="f">
+    <input id="q" placeholder="Pregunte por un ticket (TC-1001) o la hora en Lima…" autocomplete="off" />
+    <button>Enviar</button>
+  </form>
+  <div class="chips">
+    <span class="chip">¿Cuál es el estado del ticket TC-1001?</span>
+    <span class="chip">¿Qué hora es en Ciudad de México?</span>
+    <span class="chip">¿Y el ticket TC-1003?</span>
+  </div>
+</main>
+<script>
+  let sessionId = null;
+  const log = document.getElementById("log"), q = document.getElementById("q");
+  const add = (cls, text) => { const d = document.createElement("div"); d.className = "msg " + cls; d.textContent = text; log.appendChild(d); };
+  async function send(text) {
+    add("user", "👤 " + text);
+    const res = await fetch("/chat", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: text, session_id: sessionId }) });
+    const data = await res.json();
+    if (!res.ok) { add("tool", "⚠️ " + (data.detail || res.status)); return; }
+    sessionId = data.session_id;
+    data.tool_calls.forEach(t => add("tool", `🔧 ${t.name}(${JSON.stringify(t.args)}) → ${JSON.stringify(t.result)}`));
+    add("", "🤖 " + data.reply);
+    add("tool", `tokens: ${data.usage.prompt_tokens} in / ${data.usage.output_tokens} out · ${data.model}`);
+  }
+  document.getElementById("f").onsubmit = (e) => { e.preventDefault(); if (q.value.trim()) { send(q.value.trim()); q.value = ""; } };
+  document.querySelectorAll(".chip").forEach(c => c.onclick = () => send(c.textContent));
+</script>
+</body>
+</html>

@@ -1,0 +1,3 @@
+# Dependencias que Agent Runtime instala en el contenedor del agente
+google-adk==2.10.0
+google-cloud-aiplatform[agent_engines,adk]==2.2.0

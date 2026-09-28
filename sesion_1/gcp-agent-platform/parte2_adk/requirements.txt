@@ -1,0 +1,4 @@
+# Entorno local para desarrollar, probar y desplegar el agente ADK
+google-adk==2.10.0
+google-cloud-aiplatform[agent_engines,adk]==2.2.0
+pytest>=8.3

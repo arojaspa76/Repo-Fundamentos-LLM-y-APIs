@@ -1,204 +1,124 @@
-# 🧠 Fundamentos de Arquitectura LLM — Sesión 1
+# Fundamentos de Arquitectura LLM · Sesiones 1 y 2
 
-> **Curso:** Fundamentos de Arquitectura LLM  
-> **Capítulo:** 1 — Conceptos Fundamentales  
-> **Sesión:** 1 de 1 (Capítulo 1)  
-> **Duración:** 3 horas  
-> **Instructor:** [Nombre del Instructor]  
-> **Público objetivo:** Profesionales TI, Desarrolladores, Ingenieros de Sistemas y Datos
+Repositorio del curso **Fundamentos de Arquitectura LLM** (BSG Institute) —
+**Capítulo 1: Conceptos fundamentales**.
 
----
+| Sesión | Tema | Guía |
+|---|---|---|
+| 1 | Introducción a las arquitecturas LLM: origen, evolución, funcionamiento interno e impacto | [docs/01_sesion1_introduccion_arquitecturas_llm.md](docs/01_sesion1_introduccion_arquitecturas_llm.md) |
+| 2 | Tipos de modelos y servicios: decoder/encoder/encoder-decoder, nube vs. *on-premise*, casos LATAM, costos | [docs/02_sesion2_tipos_modelos_y_servicios.md](docs/02_sesion2_tipos_modelos_y_servicios.md) |
 
-## 📋 Contenido de esta Sesión
-
-| Tema | Descripción | Duración |
-|------|-------------|----------|
-| **Tema 1** | Introducción a Arquitecturas LLM | ~60 min |
-| **Tema 2** | Tipos de Modelos y Servicios | ~60 min |
-| **Tema 3** | Consideraciones de Costos | ~60 min |
+**Stack:** Python 3.12 · FastAPI · React 18 · Vite 6 · Ollama · Google Gemini Enterprise Agent Platform · Ubuntu 24.04+
 
 ---
 
-## 🎯 Objetivos de Aprendizaje
-
-Al finalizar esta sesión el estudiante será capaz de:
-
-- Explicar el origen, evolución y relevancia de los Large Language Models (LLM)
-- Diferenciar arquitecturas decoder-only, encoder-only y encoder-decoder
-- Evaluar servicios cloud y on-premise para casos de uso LATAM
-- Analizar costos de adopción de LLM considerando ROI y riesgo
-
----
-
-## 🗂️ Estructura del Repositorio
+## ¿Qué hay en este repositorio?
 
 ```
-.
-├── README.md                    # Este archivo
-├── requirements.txt             # Dependencias Python
-├── Makefile                     # Comandos de automatización
-├── .env.example                 # Variables de entorno de ejemplo
-├── docs/
-│   ├── arquitecturas_llm.md     # Referencia técnica Tema 1
-│   ├── tipos_modelos.md         # Referencia técnica Tema 2
-│   └── analisis_costos.md       # Referencia técnica Tema 3
-├── examples/
-│   ├── ollama_demo/
-│   │   ├── README.md            # Guía de instalación Ollama
-│   │   ├── demo_local.py        # Demo LLM local con Ollama
-│   │   └── demo_streaming.py    # Demo con streaming
-│   └── fastapi_demo/
-│       ├── README.md            # Guía FastAPI
-│       ├── main.py              # API principal
-│       ├── models.py            # Schemas Pydantic
-│       └── routers/
-│           └── llm.py           # Endpoints LLM
-└── src/
-    └── cost_calculator.py       # Calculadora de costos LLM
+fundamentos-arquitectura-llm/
+├── backend/                 API FastAPI "LLM Lab": chat, streaming, tokens, embeddings, comparador y costos
+│   ├── app/providers/       Patrón Adaptador: Ollama (local), Gemini, cualquier API compatible con OpenAI
+│   ├── app/services/        Tokenización, similitud coseno, estimación de costos
+│   ├── app/data/pricing.yaml  Catálogo de precios ILUSTRATIVO (editable)
+│   └── tests/               11 pruebas que corren sin Ollama (Ollama simulado con httpx.MockTransport)
+├── frontend/                React 18 + Vite 6: interfaz de 5 laboratorios interactivos
+├── labs/
+│   ├── sesion1/             4 scripts: anatomía de la API, siguiente token, tokens/costo, temperatura
+│   └── sesion2/             4 scripts: encoder vs decoder, portabilidad, punto de equilibrio, matriz de decisión
+├── gcp-agent-platform/      Laboratorio Google Cloud en 3 partes
+│   ├── parte1_consola/      Agente sin código con Agent Studio
+│   ├── parte2_adk/          Agente con Google ADK publicado en Agent Runtime
+│   └── parte3_docker_sin_adk/  Agente sin framework, Docker → Cloud Run
+├── docs/                    Instalación, guías de sesión, evaluación con retroalimentación y glosario
+├── presentacion/            Presentación PowerPoint de las sesiones 1 y 2
+├── scripts/ollama_simulado.py  Plan B para equipos sin recursos para correr un modelo
+├── docker-compose.yml       Ollama + backend + frontend con un comando
+└── Makefile                 Atajos: setup, models, backend, frontend, test…
 ```
 
----
+## Arquitectura del LLM Lab
 
-## ⚙️ Instalación Rápida
+```mermaid
+flowchart LR
+    U[Navegador<br/>React 18 + Vite 6] -->|/api · SSE| B[FastAPI<br/>LLM Lab]
+    B --> A{{Interfaz LLMProvider<br/>patrón Adaptador}}
+    A --> O[Ollama local<br/>llama3.2 · nomic-embed-text]
+    A --> G[Gemini API /<br/>Agent Platform]
+    A --> X[API compatible OpenAI<br/>OpenAI · Groq · vLLM · Azure]
+    B --> T[Servicios: tokens,<br/>costos, similitud]
+```
 
-### 1. Clonar el repositorio
+La aplicación **nunca** llama directamente a un proveedor: habla con la interfaz `LLMProvider`.
+Cambiar de modelo local a nube es cambiar configuración, no código — una de las ideas centrales de la Sesión 2.
+
+## Inicio rápido (Ubuntu 24.04+)
 
 ```bash
-git clone https://github.com/<tu-usuario>/llm-arquitectura-sesion1.git
-cd llm-arquitectura-sesion1
+# 0. Prerrequisitos: Python 3.12, Node 22, Ollama  →  ver docs/00_instalacion_ubuntu.md
+git clone <URL-DEL-REPOSITORIO> && cd fundamentos-arquitectura-llm
+make setup            # entorno virtual + dependencias + backend/.env
+make models           # llama3.2:3b, llama3.2:1b, nomic-embed-text
+make test             # pruebas (no requieren Ollama)
+
+make backend          # terminal 1 → http://localhost:8000/docs
+make frontend         # terminal 2 → http://localhost:5173
 ```
 
-### 2. Crear entorno virtual Python
+¿Sin recursos para ejecutar un modelo? `make simulado` levanta un **Ollama simulado** en el puerto 11434
+con respuestas fijas: permite recorrer toda la interfaz (las respuestas no son de un LLM real).
+
+Con Docker: `docker compose up -d --build && make docker-models` → <http://localhost:8080>.
+
+## Los 5 laboratorios del LLM Lab
+
+| Pestaña | Sesión | Qué se aprende |
+|---|---|---|
+| 1 · Playground | S1 | Roles `system`/`user`, temperatura, top-p, máx. tokens, *streaming* SSE, tiempo al primer token |
+| 2 · Tokens | S1 | Cómo el modelo "ve" el texto; español vs. inglés; código, números y emojis |
+| 3 · Encoder vs Decoder | S2 | *Embeddings* y similitud semántica con un modelo encoder |
+| 4 · Comparador | S2 | Mismo *prompt* en varios modelos: calidad, latencia, tokens y costo |
+| 5 · Costos | S2 | Costo mensual por escenario (bancario, salud, sector público), caché y costos fijos |
+
+## API del backend
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/health` | Estado del servicio y de Ollama |
+| GET | `/api/providers` | Proveedores habilitados según `.env` |
+| GET | `/api/models?provider=ollama` | Modelos disponibles |
+| POST | `/api/chat` | Llamada completa con uso de tokens y métricas |
+| POST | `/api/chat/stream` | *Streaming* con Server-Sent Events |
+| POST | `/api/compare` | Mismo *prompt* en varios modelos |
+| POST | `/api/tokenize` | Tokenización visual |
+| POST | `/api/embeddings/similarity` | Matriz de similitud coseno |
+| GET | `/api/pricing` · POST `/api/cost/estimate` | Catálogo y estimación de costos |
+
+Documentación interactiva (Swagger): <http://localhost:8000/docs>.
+
+## Proveedores de nube (opcional)
+
+Edite `backend/.env`:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate        # Linux/macOS
-# .venv\Scripts\activate         # Windows
-
-pip install -r requirements.txt
+GEMINI_API_KEY=...                                  # https://aistudio.google.com/apikey
+OPENAI_COMPAT_BASE_URL=https://api.openai.com/v1    # o Groq, Azure (v1), vLLM, LM Studio…
+OPENAI_COMPAT_API_KEY=...
 ```
 
-### 3. Configurar variables de entorno
+## ⚠️ Sobre los precios
 
-```bash
-cp .env.example .env
-# Editar .env con tus API keys
-```
+`backend/app/data/pricing.yaml` contiene **valores ilustrativos** para enseñar el **método** de estimación.
+Los precios reales cambian con frecuencia: verifique la página oficial de cada proveedor y actualice el archivo
+antes de usarlo para una decisión real.
 
-### 4. Instalar Ollama (para demos locales)
+## Laboratorio de Google Cloud
 
-```bash
-# Linux/macOS
-curl -fsSL https://ollama.ai/install.sh | sh
+Ver [gcp-agent-platform/README.md](gcp-agent-platform/README.md): el mismo agente de mesa de ayuda de
+**TechCorp Latinoamérica** construido de tres formas (consola, ADK y Docker sin ADK) para comparar enfoques.
 
-# Verificar instalación
-ollama --version
+## Materiales docentes
 
-# Descargar modelo (elige uno según tu RAM disponible)
-ollama pull llama3.2:3b     # ~2 GB — recomendado para demos
-ollama pull mistral:7b       # ~4 GB — mayor calidad
-ollama pull phi3:mini        # ~2.3 GB — muy eficiente
-```
-
-### 5. Ejecutar demo local
-
-```bash
-make demo-ollama
-# o manualmente:
-python examples/ollama_demo/demo_local.py
-```
-
-### 6. Ejecutar API FastAPI
-
-```bash
-make run-api
-# o manualmente:
-uvicorn examples.fastapi_demo.main:app --reload --port 8000
-
-# Explorar la API
-open http://localhost:8000/docs
-```
-
----
-
-## 🚀 Comandos Disponibles (Makefile)
-
-```bash
-make help           # Ver todos los comandos
-make setup          # Instalar dependencias
-make demo-ollama    # Demo LLM local con Ollama
-make run-api        # Iniciar API FastAPI
-make test           # Ejecutar pruebas
-make lint           # Verificar código con ruff
-make clean          # Limpiar archivos temporales
-make cost-calc      # Ejecutar calculadora de costos
-```
-
----
-
-## 📚 Referencia Rápida de Arquitecturas
-
-```
-Transformer (2017 — Vaswani et al.)
-├── Encoder-only        → BERT, RoBERTa, DistilBERT
-│   └── Uso: clasificación, embeddings, búsqueda semántica
-├── Decoder-only        → GPT-4, Llama, Mistral, Claude
-│   └── Uso: generación de texto, chat, código, análisis
-└── Encoder-Decoder     → T5, BART, mT5
-    └── Uso: traducción, resumen, Q&A extractivo
-```
-
----
-
-## 💰 Comparativa de Costos (Mayo 2025)
-
-| Proveedor | Modelo | Input (por 1M tokens) | Output (por 1M tokens) |
-|-----------|--------|-----------------------|------------------------|
-| OpenAI | GPT-4o | $2.50 | $10.00 |
-| OpenAI | GPT-4o mini | $0.15 | $0.60 |
-| Anthropic | Claude 3.5 Haiku | $0.80 | $4.00 |
-| Anthropic | Claude 3.7 Sonnet | $3.00 | $15.00 |
-| Google | Gemini 1.5 Flash | $0.075 | $0.30 |
-| Meta | Llama 3.1 (self-hosted) | ~$0.10* | ~$0.10* |
-| Local | Ollama (cualquier modelo) | $0.00 | $0.00 |
-
-*Estimado incluyendo costo de infraestructura GPU
-
----
-
-## 🌎 Casos de Uso LATAM
-
-| Sector | Caso de Uso | Modelo Recomendado |
-|--------|-------------|-------------------|
-| Sector Público | Atención ciudadana, trámites | GPT-4o mini / Claude Haiku |
-| Financiero | Análisis de riesgo, AML | Claude Sonnet / GPT-4o |
-| Salud | Asistentes clínicos, ICD coding | GPT-4o + RAG |
-| Educación | Tutores adaptativos | Llama 3 (on-premise) |
-| Legal | Revisión de contratos | Claude Sonnet |
-| Retail | Catálogos, atención al cliente | Gemini Flash |
-
----
-
-## 📖 Recursos Adicionales
-
-- [Attention Is All You Need (Paper Original)](https://arxiv.org/abs/1706.03762)
-- [Ollama Documentation](https://ollama.ai/docs)
-- [FastAPI Documentation](https://fastapi.tiangolo.com)
-- [OpenAI Pricing](https://openai.com/pricing)
-- [Hugging Face Model Hub](https://huggingface.co/models)
-- [LangChain Documentation](https://docs.langchain.com)
-
----
-
-## 🤝 Contribuciones
-
-Este repositorio es material educativo del curso. Los estudiantes son bienvenidos a:
-- Abrir Issues con preguntas
-- Proponer mejoras mediante Pull Requests
-- Compartir sus implementaciones en la carpeta `student-projects/`
-
----
-
-## 📜 Licencia
-
-MIT License — Ver [LICENSE](LICENSE) para más detalles.
+- Presentación: `presentacion/Sesiones_01_02_Fundamentos_Arquitectura_LLM.pptx` (con notas del orador)
+- Guía: `presentacion/Guia_Sesiones_01_02_Fundamentos_Arquitectura_LLM.docx`
+- Evaluación con retroalimentación: [docs/03_evaluacion_sesiones_1_2.md](docs/03_evaluacion_sesiones_1_2.md)
+- Glosario: [docs/04_glosario.md](docs/04_glosario.md)

@@ -1,0 +1,90 @@
+# =============================================================================
+# CATÁLOGO DE PRECIOS DE REFERENCIA  (USD por 1 millón de tokens)
+# -----------------------------------------------------------------------------
+# ⚠️  VALORES ILUSTRATIVOS CON FINES DIDÁCTICOS.
+#     Los precios de los proveedores cambian con frecuencia (a veces cada mes).
+#     Antes de tomar una decisión real, verifique la página oficial de precios
+#     de cada proveedor y actualice este archivo. El objetivo del ejercicio es
+#     entender el MÉTODO de estimación, no memorizar tarifas.
+#
+#  input_per_mtok        -> precio por 1M tokens de entrada (prompt)
+#  cached_input_per_mtok -> precio por 1M tokens de entrada servidos desde caché
+#  output_per_mtok       -> precio por 1M tokens de salida (generados)
+#  fixed_monthly_usd     -> costo fijo mensual (infraestructura propia / GPU)
+# =============================================================================
+last_reviewed: "2026-09 (revisar antes de clase)"
+currency: USD
+models:
+  # ---------------- APIs gestionadas (pago por uso) ----------------------
+  - id: gemini-2.5-flash
+    provider: Google (Agent Platform / Gemini API)
+    deployment: nube - API
+    input_per_mtok: 0.30
+    cached_input_per_mtok: 0.075
+    output_per_mtok: 2.50
+    fixed_monthly_usd: 0
+    notes: "Modelo rápido de propósito general; buen balance costo/calidad."
+
+  - id: gemini-2.5-pro
+    provider: Google (Agent Platform / Gemini API)
+    deployment: nube - API
+    input_per_mtok: 1.25
+    cached_input_per_mtok: 0.31
+    output_per_mtok: 10.00
+    fixed_monthly_usd: 0
+    notes: "Razonamiento complejo; tarifa mayor para prompts muy largos."
+
+  - id: gpt-4o-mini
+    provider: OpenAI / Azure OpenAI
+    deployment: nube - API
+    input_per_mtok: 0.15
+    cached_input_per_mtok: 0.075
+    output_per_mtok: 0.60
+    fixed_monthly_usd: 0
+    notes: "Modelo pequeño de bajo costo."
+
+  - id: gpt-4o
+    provider: OpenAI / Azure OpenAI
+    deployment: nube - API
+    input_per_mtok: 2.50
+    cached_input_per_mtok: 1.25
+    output_per_mtok: 10.00
+    fixed_monthly_usd: 0
+    notes: "Modelo multimodal de propósito general."
+
+  - id: claude-haiku-4-5
+    provider: Anthropic (API, Bedrock, Agent Platform)
+    deployment: nube - API
+    input_per_mtok: 1.00
+    cached_input_per_mtok: 0.10
+    output_per_mtok: 5.00
+    fixed_monthly_usd: 0
+    notes: "Modelo rápido de la familia Claude."
+
+  - id: claude-sonnet
+    provider: Anthropic (API, Bedrock, Agent Platform)
+    deployment: nube - API
+    input_per_mtok: 3.00
+    cached_input_per_mtok: 0.30
+    output_per_mtok: 15.00
+    fixed_monthly_usd: 0
+    notes: "Modelo de gama alta para tareas complejas y código."
+
+  # ---------------- Auto-hospedado (costo fijo) ---------------------------
+  - id: llama3.2-3b-onprem
+    provider: Meta Llama (open weights) vía Ollama
+    deployment: on-premise - servidor CPU/GPU pequeño
+    input_per_mtok: 0
+    cached_input_per_mtok: 0
+    output_per_mtok: 0
+    fixed_monthly_usd: 180
+    notes: "Supuesto: servidor dedicado amortizado + energía + operación. Capacidad limitada."
+
+  - id: llama-70b-gpu-cloud
+    provider: Meta Llama (open weights) vía vLLM
+    deployment: nube - VM con GPU dedicada 24x7
+    input_per_mtok: 0
+    cached_input_per_mtok: 0
+    output_per_mtok: 0
+    fixed_monthly_usd: 2900
+    notes: "Supuesto: 1 VM con GPU ~USD 4/h x 730 h. No incluye alta disponibilidad (x2)."
